@@ -74,7 +74,7 @@ def format_response_content(response, output_file=TEMP_FORMATTED_CONTENT):
         )
 
         # Write content to file
-        write_to_file("\n".join(formatted_content), output_file)
+        write_to_file(formatted_content, output_file)
 
         return formatted_content, data_pretty
 
@@ -147,4 +147,5 @@ if response:
     decklist = generate_vanilla_decklist(card_data)
 
     # Print the decklist
+    print("\n\nDecklist:")
     print("\n".join(decklist))
