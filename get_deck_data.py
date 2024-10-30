@@ -5,7 +5,13 @@ from bs4 import BeautifulSoup
 ARCHIDEKT_TAG = 'script'
 ARCHIDEKT_TAG_ID = '__NEXT_DATA__'
 
-def fetch_website_content(url):
+TEMP_RAW_CONTENT = "TEMP_raw_content.txt"
+TEMP_FORMATTED_CONTENT = "TEMP_formatted_content.txt"
+TEMP_DECKLIST_TXT = "TEMP_decklist.txt"
+
+def fetch_website_content(url, output_file=TEMP_RAW_CONTENT):
+    if output_file == "":
+        output_file = TEMP_RAW_CONTENT
 
     try:
         response = requests.get(url)
@@ -13,15 +19,18 @@ def fetch_website_content(url):
         # print("Response content:\n", response.text)
 
         # Write raw content to file
-        write_to_file(response.text, "raw_content_temp.txt")
+        write_to_file(response.text, output_file)
         return response.text
 
     except requests.exceptions.RequestException as e:
         print("Error fetching website content: ", e)
         return None
 
-def format_response_content(response, output_file):
-     # Parse HTML with BeautifulSoup
+def format_response_content(response, output_file=TEMP_FORMATTED_CONTENT):
+    if output_file == "":
+        output_file = TEMP_FORMATTED_CONTENT
+
+    # Parse HTML with BeautifulSoup
     try:
         soup = BeautifulSoup(response, 'html.parser')
         
@@ -36,19 +45,23 @@ def format_response_content(response, output_file):
 
         script_tag = soup.find(ARCHIDEKT_TAG, id=ARCHIDEKT_TAG_ID)
 
+        data_pretty = "No JSON data found"
+
         # Extract JSON data from script tag
         if script_tag:
             # Extract JSON content
             json_content = script_tag.string
 
-            # Load the JSON content into a Python dictionary
-            data = json.loads(json_content)
+            try:
+                # Load the JSON content into a Python dictionary
+                data = json.loads(json_content)
 
-            # Pretty formatted data the dictionary
-            data_pretty = json.dumps(data, indent=2)
+                # Pretty formatted data the dictionary
+                data_pretty = json.dumps(data, indent=2)
+            except json.JSONDecodeError as e:
+                print(f"An error occurred decoding the JSON content: {e}")
 
             # Now 'data' is a dictionary containing the JSON data
-            #print(data_pretty) # pretty print the dictionary
 
         # Format content
         formatted_content = (
@@ -61,22 +74,17 @@ def format_response_content(response, output_file):
         )
 
         # Write content to file
-        write_to_file(formatted_content, output_file)
+        write_to_file("\n".join(formatted_content), output_file)
 
         return formatted_content, data_pretty
 
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred formatting the response: {e}")
 
-def write_to_file(content, output_file):
-    try:
-        with open(output_file, 'w', encoding='utf-8') as file:
-            file.write(content)
-            print(f"Content written to {output_file}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+def generate_vanilla_decklist(card_data, output_file=TEMP_DECKLIST_TXT):
+    if output_file == "":
+        output_file = TEMP_DECKLIST_TXT
 
-def generate_vanilla_decklist(card_data):
     # Load the JSON data into a Python dictionary
     card_data = json.loads(card_data)
 
@@ -96,28 +104,47 @@ def generate_vanilla_decklist(card_data):
         else:
             # Just print the name if quantity is 1
             card_list.append(name)
+
+    
+    # Write decklist to file
+    write_to_file("\n".join(card_list), output_file)
     
     return card_list
 
+def write_to_file(content, output_file):
+    try:
+        with open(output_file, 'w', encoding='utf-8') as file:
+            file.write(content)
+            print(f"\nContent written to {output_file}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
 # TODO: SCG is the class we want to use for the specific printing
 # TODO: scryfallImageHash might be the key to getting the image for the card
-# TODO: 
+# TODO: Allow for other sites to be used
+# TODO: Automatically detect the site and use appropriate parsing strategy.
+# TODO: Use command line arguments to specify the URL and output files
+# TODO: Rename functions to be more descriptive
+# TODO: Generate decklist file based on the deck name/author/date/order
+
 # Test the function
-url = "https://archidekt.com/decks/9166525/dsc_miracle_worker"
+url = "https://archidekt.com/decks/9189676/dsc_death_toll"
 
-output_file = "formatted_content_temp.txt"
+# Output files
+# WARNING: If files are not specified, the function will overwrite the temp files used for testing
+raw_output_file = ""
+formatted_output_file = ""
+decklist_output_file = ""
 
-response = fetch_website_content(url)
+formatted_deck_information, card_data = "", ""
 
-formatted_response, card_data = "", ""
+response = fetch_website_content(url, raw_output_file)
 
 if response:
-    formatted_response, card_data = format_response_content(response, output_file)
+    formatted_deck_information, card_data = format_response_content(response, formatted_output_file)
 
     # Generate a vanilla decklist from the card data
     decklist = generate_vanilla_decklist(card_data)
 
-    #print(f"Decklist:\n{decklist}")
-
-    # Write decklist to file
-    write_to_file("\n".join(decklist), "decklist_temp.txt")
+    # Print the decklist
+    #print("\n".join(decklist))
