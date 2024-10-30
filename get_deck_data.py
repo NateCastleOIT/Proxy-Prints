@@ -76,6 +76,32 @@ def write_to_file(content, output_file):
     except Exception as e:
         print(f"An error occurred: {e}")
 
+def generate_vanilla_decklist(card_data):
+    # Load the JSON data into a Python dictionary
+    card_data = json.loads(card_data)
+
+    # Generate a vanilla decklist from the card data
+    card_map = card_data.get('props', {}).get('pageProps', {}).get('redux', {}).get('deck', {}).get('cardMap', {})
+
+    #card_names = [card_info['name'] for card_info in card_map.values() if 'name' in card_info]
+    card_list = []
+
+    for card_info in card_map.values():
+        name = card_info.get('name', '')
+        quantity = card_info.get('qty', 1)
+
+        if quantity > 1:
+            # Append quantity to the card name if quantity is greater than 1
+            card_list.append(f"{quantity} {name}")
+        else:
+            # Just print the name if quantity is 1
+            card_list.append(name)
+    
+    return card_list
+
+# TODO: SCG is the class we want to use for the specific printing
+# TODO: scryfallImageHash might be the key to getting the image for the card
+# TODO: 
 # Test the function
 url = "https://archidekt.com/decks/9166525/dsc_miracle_worker"
 
@@ -87,3 +113,11 @@ formatted_response, card_data = "", ""
 
 if response:
     formatted_response, card_data = format_response_content(response, output_file)
+
+    # Generate a vanilla decklist from the card data
+    decklist = generate_vanilla_decklist(card_data)
+
+    #print(f"Decklist:\n{decklist}")
+
+    # Write decklist to file
+    write_to_file("\n".join(decklist), "decklist_temp.txt")
