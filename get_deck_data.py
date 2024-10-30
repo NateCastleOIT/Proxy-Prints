@@ -98,12 +98,8 @@ def generate_vanilla_decklist(card_data, output_file=TEMP_DECKLIST_TXT):
         name = card_info.get('name', '')
         quantity = card_info.get('qty', 1)
 
-        if quantity > 1:
-            # Append quantity to the card name if quantity is greater than 1
-            card_list.append(f"{quantity} {name}")
-        else:
-            # Just print the name if quantity is 1
-            card_list.append(name)
+        # Append quantity to the card name if quantity is greater than 1
+        card_list.append(f"{quantity} {name}")
 
     
     # Write decklist to file
