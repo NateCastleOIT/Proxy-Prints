@@ -1,5 +1,3 @@
-Here's a sample README for your program that fetches a Magic: The Gathering decklist from Archidekt and formats the content into a readable format. You can adjust any sections as needed based on your preferences or project requirements.
-
 ```markdown
 # Archidekt Decklist Fetcher
 
@@ -76,10 +74,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Requests](https://docs.python-requests.org/en/latest/) for easy HTTP requests.
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) for HTML parsing.
 ```
-
-### How to Use
-
-- You can copy the README into a file named `README.md` in your project directory.
-- Adjust any sections to fit your project’s needs or add additional information if necessary.
-
-Let me know if you need any further modifications or additions!
