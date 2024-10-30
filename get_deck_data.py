@@ -147,4 +147,4 @@ if response:
     decklist = generate_vanilla_decklist(card_data)
 
     # Print the decklist
-    #print("\n".join(decklist))
+    print("\n".join(decklist))
