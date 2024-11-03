@@ -17,6 +17,8 @@ TEMP_RAW_CONTENT = "TEMP_raw_content.txt"
 TEMP_FORMATTED_CONTENT = "TEMP_formatted_content.txt"
 TEMP_DECKLIST_TXT = "TEMP_decklist.txt"
 
+URL = "https://archidekt.com/decks/9823611/but_why_is_he_here_new"
+
 WRITE_TEMP_FILES = False
 
 def fetch_website_content(url, output_file=TEMP_RAW_CONTENT):
@@ -133,18 +135,20 @@ def get_card_urls(card_data):
 
     for card_id, card_info in card_map.items():
         card_name = card_info.get('name', 'Unknown Card')
+
+        card_qty = card_info.get('qty', 1)
         
         # Use 'uid' to construct the image URL if available
         uid = card_info.get('uid')
         if uid:
             image_url = f"https://cards.scryfall.io/large/front/{uid[0]}/{uid[1]}/{uid}.jpg"
-            card_images[card_name] = image_url
+            card_images[card_name] = image_url, card_qty
         else:
-            card_images[card_name] = "No image available"
+            card_images[card_name] = "No image available", card_qty
     
     return card_images
 
-def create_new_folder(base_folder_name, folder_parent="Decks"):
+def create_new_deck_folder(base_folder_name, folder_parent="Decks"):
     """
     Generates a unique folder name by appending an incremented number if the folder already exists.
 
@@ -154,24 +158,31 @@ def create_new_folder(base_folder_name, folder_parent="Decks"):
     Returns:
         str: A unique folder name.
     """
-    folder_name = base_folder_name
-    counter = 1
-
     # Sanitize the folder name
-    folder_name = sanitize_title(folder_name)
+    folder_name = sanitize_title(base_folder_name)
 
     # Loop until we find a folder name that doesn't exist
-    while os.path.exists('Decks\\' + folder_name):
-        if counter == 1:
-            folder_name += f" ({counter})"
-            counter += 1
-        else:
-            folder_name = folder_name.replace(f" ({counter - 1})", f" ({counter})")
-            counter += 1
-
+    folder_name = increment_file_name(folder_parent + "\\", folder_name)
+    deck_name = folder_name
     folder_name = f'D:\Python\Python Projects\Proxy Prints\{folder_parent}\{folder_name}\deck_list'
 
-    return folder_name
+    return folder_name, deck_name
+
+def increment_file_name(parent_path, file_name, extension=""):
+    counter = 1
+
+    path = parent_path + file_name + extension
+
+    while os.path.exists(path):
+        if counter == 1:
+            file_name += f"_({counter})"
+            path = parent_path + "\\" + file_name + extension
+            counter += 1
+        else:
+            file_name = file_name.replace(f"_({counter - 1})", f"_({counter})")
+            path = parent_path + "\\" + file_name + extension
+            counter += 1
+    return file_name
 
 def sanitize_title(title):
     """
@@ -202,7 +213,7 @@ def download_images(card_images, deck_name="TEMP_deck"):
     folder_name = f"{deck_name}_images"
 
     # Sanitize the folder name
-    folder_name = create_new_folder(folder_name)
+    folder_name, deck_name = create_new_deck_folder(folder_name)
 
     print(f"\nCreating folder: {folder_name}")
 
@@ -211,29 +222,34 @@ def download_images(card_images, deck_name="TEMP_deck"):
 
     # Download each image
     for card_name, image_url in card_images.items():
-        if image_url == "No image available":
-            print(f"No image available for {card_name}")
-            continue
+        for i in range(image_url[1]):
+            if image_url[1] > 1:
+                if i > 0:
+                    card_name = card_name.replace(f"_{i}", f"_{i+1}")
+                else:
+                    card_name = f"{card_name}_{i+1}"
+            if image_url == "No image available":
+                print(f"No image available for {card_name}")
+                continue
 
-        try:
-            response = requests.get(image_url, stream=True)
-            response.raise_for_status()
-            
-            # Save the image with the card name
-            image_path = os.path.join(folder_name, f"{card_name}.jpg")
-            
-            # Change MDFC card names to use a hyphen instead of a //
-            image_path = image_path.replace('//', '--')
+            try:
+                response = requests.get(image_url[0], stream=True)
+                response.raise_for_status()
+                
+                # Save the image with the card name
+                image_path = os.path.join(folder_name, f"{card_name}.jpg")
+                
+                # Change MDFC card names to use a hyphen instead of a //
+                image_path = image_path.replace('//', '--')
 
-            with open(image_path, 'wb') as file:
-                for chunk in response.iter_content(1024):
-                    file.write(chunk)
+                with open(image_path, 'wb') as file:
+                    for chunk in response.iter_content(1024):
+                        file.write(chunk)
+                
+                print(f"Downloaded {card_name} image.")
             
-            print(f"Downloaded {card_name} image.")
-        
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to download image for {card_name}: {e}")
-
+            except requests.exceptions.RequestException as e:
+                print(f"Failed to download image for {card_name}: {e}")
     return folder_name
 
 def write_to_file(content, output_file):
@@ -349,6 +365,9 @@ def main(url):
         pdf_path = f"{image_folder.split('deck_list')[0]}PRINTABLE_{deck_title}.pdf"
 
         pdf_generator = PDFGenerator(pdf_path, padding=2, margin=20)
+
+        print(f"\nGenerating PDF: {pdf_path} ...")
+
         pdf_generator.add_images_to_pdf(image_folder)
 
         print(f"\nPDF generated: {pdf_path}")
