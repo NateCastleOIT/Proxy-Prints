@@ -1,3 +1,4 @@
+import argparse
 import requests
 import os
 import re
@@ -16,6 +17,8 @@ TEMP_RAW_CONTENT = "TEMP_raw_content.txt"
 TEMP_FORMATTED_CONTENT = "TEMP_formatted_content.txt"
 TEMP_DECKLIST_TXT = "TEMP_decklist.txt"
 
+WRITE_TEMP_FILES = False
+
 def fetch_website_content(url, output_file=TEMP_RAW_CONTENT):
     if output_file == "":
         output_file = TEMP_RAW_CONTENT
@@ -33,7 +36,7 @@ def fetch_website_content(url, output_file=TEMP_RAW_CONTENT):
         print("Error fetching website content: ", e)
         return None
 
-def format_response_content(response, output_file=TEMP_FORMATTED_CONTENT):
+def format_response_content(response, output_file=TEMP_FORMATTED_CONTENT, url=""):
     if output_file == "":
         output_file = TEMP_FORMATTED_CONTENT
 
@@ -234,12 +237,13 @@ def download_images(card_images, deck_name="TEMP_deck"):
     return folder_name
 
 def write_to_file(content, output_file):
-    try:
-        with open(output_file, 'w', encoding='utf-8') as file:
-            file.write(content)
-            print(f"\nContent written to {output_file}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    if WRITE_TEMP_FILES:
+        try:
+            with open(output_file, 'w', encoding='utf-8') as file:
+                file.write(content)
+                print(f"\nContent written to {output_file}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
 
 class PDFGenerator:
@@ -310,41 +314,51 @@ class PDFGenerator:
 # TODO: Generate decklist file based on the deck name/author/date/order
 
 
-# Test the function
-url = "https://archidekt.com/decks/9823611/but_why_is_he_here_new"
+def main(url):
+    # Output files
+    # WARNING: If files are not specified, the function will overwrite the temp files used for testing
+    raw_output_file = ""
+    formatted_output_file = ""
+    decklist_output_file = ""
 
-# Output files
-# WARNING: If files are not specified, the function will overwrite the temp files used for testing
-raw_output_file = ""
-formatted_output_file = ""
-decklist_output_file = ""
+    output_pdf = ""
 
-output_pdf = ""
+    formatted_deck_information, card_data = "", ""
 
-formatted_deck_information, card_data = "", ""
+    response = fetch_website_content(url, raw_output_file)
 
-response = fetch_website_content(url, raw_output_file)
+    if response:
+        formatted_deck_information, card_data, deck_title = format_response_content(response, formatted_output_file, url)
 
-if response:
-    formatted_deck_information, card_data, deck_title = format_response_content(response, formatted_output_file)
+        # Generate a vanilla decklist from the card data
+        decklist = generate_vanilla_decklist(card_data)
 
-    # Generate a vanilla decklist from the card data
-    decklist = generate_vanilla_decklist(card_data)
+        # Print the decklist
+        print("\n\nDecklist:")
+        print("\n".join(decklist))
 
-    # Print the decklist
-    print("\n\nDecklist:")
-    print("\n".join(decklist))
+        # Get card images
+        card_images = get_card_urls(card_data)
+        print("\nCard images:")
+        for card_name, image_url in card_images.items():
+            print(f"{card_name}: {image_url}")
 
-    # Get card images
-    card_images = get_card_urls(card_data)
-    print("\nCard images:")
-    for card_name, image_url in card_images.items():
-        print(f"{card_name}: {image_url}")
+        image_folder = download_images(card_images, deck_name=deck_title)
 
-    image_folder = download_images(card_images, deck_name=deck_title)
+        # Generate a PDF with the card images
+        pdf_path = f"{image_folder.split('deck_list')[0]}PRINTABLE_{deck_title}.pdf"
 
-    # Generate a PDF with the card images
-    pdf_path = f"{image_folder.split('deck_list')[0]}PRINTABLE_{deck_title}.pdf"
+        pdf_generator = PDFGenerator(pdf_path, padding=2, margin=20)
+        pdf_generator.add_images_to_pdf(image_folder)
 
-    pdf_generator = PDFGenerator(pdf_path, padding=2, margin=20)
-    pdf_generator.add_images_to_pdf(image_folder)
+        print(f"\nPDF generated: {pdf_path}")
+
+        # Open the PDF file
+        os.startfile(pdf_path)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Fetch deck data from an Archidekt URL.")
+    parser.add_argument("url", type=str, help="The URL of the Archidekt deck to process.")
+    args = parser.parse_args()
+
+    main(args.url)
