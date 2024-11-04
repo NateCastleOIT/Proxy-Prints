@@ -297,10 +297,6 @@ class PDFGenerator:
             """
             image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
 
-            # grids = (1, 3), (2, 2), (3, 1)
-            # positions = (0, 0), (MTG_CARD_HEIGHT_IN_POINTS, 0), (0, MTG_CARD_HEIGHT_IN_POINTS)
-            # rotated = (90, 0, 0)
-
             image_index = 0
             while image_index < len(image_files):
                 for grid_index, grid in enumerate(grids):
