@@ -17,8 +17,8 @@ TEMP_RAW_CONTENT = "TEMP_raw_content.txt"
 TEMP_FORMATTED_CONTENT = "TEMP_formatted_content.txt"
 TEMP_DECKLIST_TXT = "TEMP_decklist.txt"
 
-MTG_CARD_WIDTH_IN_POINTS= 2.46*72
-MTG_CARD_HEIGHT_IN_POINTS= 3.46*72
+MTG_CARD_WIDTH_IN_POINTS= 2.46*72 # 2.46 inches, 1 inch = 72 points
+MTG_CARD_HEIGHT_IN_POINTS= 3.46*72 # 3.46 inches, 1 inch = 72 points
 
 WRITE_TEMP_FILES = True
 
@@ -168,7 +168,7 @@ def create_new_deck_folder(base_folder_name, deck_directory="Decks"):
     # Loop until we find a folder name that doesn't exist
     folder_name = increment_file_name(deck_directory + "\\", folder_name)
     deck_name = folder_name
-    deck_folder_name = f'D:\Python\Python Projects\Proxy Prints\{deck_directory}\{folder_name}\deck_list'
+    deck_folder_name = f'{deck_directory}\{folder_name}\deck_list'
 
     return deck_folder_name, deck_name
 
@@ -263,38 +263,12 @@ def download_images(card_images, deck_name="TEMP_deck"):
                 print(f"Failed to download image for {card_name}: {e}")
     return folder_name
 
-def rotate_images_in_folder(folder_path, angle, output_folder=None):
-    # Use new folder next to decklist if none is specified
-    if output_folder is None:
-        output_folder = folder_path + "_rotated_" + str(angle)
-        os.makedirs(output_folder, exist_ok=True)
-    else:
-        os.makedirs(output_folder, exist_ok=True)
-
-    # Loop through all files in the folder
-    for filename in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, filename)
-        
-        # Only process files that are images
-        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
-            try:
-                # Open, rotate, and save the image
-                with Image.open(file_path) as img:
-                    rotated_img = img.rotate(angle, expand=True)
-                    rotated_img.save(os.path.join(output_folder, filename))
-                    print(f"Rotated {filename} by {angle} degrees.")
-            except Exception as e:
-                print(f"Could not rotate {filename}: {e}")
-
-    return output_folder
-
-
 def write_to_file(content, output_file):
     if WRITE_TEMP_FILES:
         try:
             with open(output_file, 'w', encoding='utf-8') as file:
                 file.write(content)
-                print(f"\nContent written to {output_file}")
+                # print(f"\nContent written to {output_file}")
         except Exception as e:
             print(f"An error occurred: {e}")
 
@@ -363,7 +337,6 @@ class PDFGenerator:
 
             self.canvas.save()
 
-
     def process_image(self, image_path, angle=0,):
         with Image.open(image_path) as img:
             if angle:
@@ -372,13 +345,10 @@ class PDFGenerator:
             return image_path, img
 
 
-# TODO: SCG is the class we want to use for the specific printing
-# TODO: scryfallImageHash might be the key to getting the image for the card
 # TODO: Allow for other sites to be used
 # TODO: Automatically detect the site and use appropriate parsing strategy.
 # TODO: Use command line arguments to specify the URL and output files
 # TODO: Rename functions to be more descriptive
-# TODO: Generate decklist file based on the deck name/author/date/order
 
 
 def main(url):
@@ -400,9 +370,9 @@ def main(url):
         card_images = get_card_urls(card_data)
 
         # Print card image urls
-        print("\nCard images:")
-        for card_name, image_url in card_images.items():
-            print(f"{card_name}: {image_url}")
+        # print("\nCard images:")
+        # for card_name, image_url in card_images.items():
+        #     print(f"{card_name}: {image_url}")
 
         new_deck_image_folder = download_images(card_images, deck_name=deck_title)
 
@@ -420,14 +390,14 @@ def main(url):
         pdf_path = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_9_{deck_title}.pdf"
         pdf_path2 = f"{new_deck_image_folder.split('deck_list')[0]}NEW_PRINTABLE_10_{deck_title}.pdf"
 
-        print(f"\nGenerating PDF: {pdf_path} ...")
+        print(f"\nGenerating PDF...")
         pdf_generator = PDFGenerator(pdf_path, margin=0, padding=2)
         pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,))
         print(f"\nPDF generated: {pdf_path}")
 
         os.startfile(pdf_path)
 
-        print(f"\nGenerating PDF: {pdf_path2} ...")
+        print(f"\nGenerating PDF...")
         pdf_generator = PDFGenerator(pdf_path2, margin=0, padding=2)
         pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((1, 3),(2,2),(3,1)), positions=((0, 0),(MTG_CARD_HEIGHT_IN_POINTS + 2, 0),(0, 3*MTG_CARD_WIDTH_IN_POINTS + 6),), angle=(90,0,0,))
         print(f"\nPDF generated: {pdf_path2}")
