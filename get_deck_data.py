@@ -17,12 +17,11 @@ TEMP_RAW_CONTENT = "TEMP_raw_content.txt"
 TEMP_FORMATTED_CONTENT = "TEMP_formatted_content.txt"
 TEMP_DECKLIST_TXT = "TEMP_decklist.txt"
 
-URL = "https://archidekt.com/decks/9823611/but_why_is_he_here_new"
-
-WRITE_TEMP_FILES = False
+WRITE_TEMP_FILES = True
 
 def fetch_website_content(url, output_file=TEMP_RAW_CONTENT):
     if output_file == "":
+        print("Using TEMP_raw_content.txt...")
         output_file = TEMP_RAW_CONTENT
 
     try:
@@ -30,16 +29,15 @@ def fetch_website_content(url, output_file=TEMP_RAW_CONTENT):
         response.raise_for_status() # raise an exception in case of http errors
         # print("Response content:\n", response.text)
 
-        # Write raw content to file
-        write_to_file(response.text, output_file)
         return response.text
 
     except requests.exceptions.RequestException as e:
         print("Error fetching website content: ", e)
         return None
 
-def format_response_content(response, output_file=TEMP_FORMATTED_CONTENT, url=""):
+def format_response_content(response, url="", output_file=TEMP_FORMATTED_CONTENT):
     if output_file == "":
+        print("Using TEMP_formatted_content.txt...")
         output_file = TEMP_FORMATTED_CONTENT
 
     # Parse HTML with BeautifulSoup
@@ -55,8 +53,16 @@ def format_response_content(response, output_file=TEMP_FORMATTED_CONTENT, url=""
         og_image = soup.find('meta', {'property': 'og:image'})
         og_image_url = og_image['content'] if og_image else "No image found"
 
-        script_tag = soup.find(ARCHIDEKT_TAG, id=ARCHIDEKT_TAG_ID)
 
+        # TODO: Adjust for different sites
+        script_tag = None
+        if url.startswith("https://archidekt.com/decks/"):
+            script_tag = soup.find(ARCHIDEKT_TAG, id=ARCHIDEKT_TAG_ID)
+        else:
+            print("Site not supported")
+            return
+
+        # Default JSON data
         data_pretty = "No JSON data found"
 
         # Extract JSON data from script tag
@@ -72,8 +78,6 @@ def format_response_content(response, output_file=TEMP_FORMATTED_CONTENT, url=""
                 data_pretty = json.dumps(data, indent=2)
             except json.JSONDecodeError as e:
                 print(f"An error occurred decoding the JSON content: {e}")
-
-            # Now 'data' is a dictionary containing the JSON data
 
         # Format content
         formatted_content = (
@@ -95,6 +99,7 @@ def format_response_content(response, output_file=TEMP_FORMATTED_CONTENT, url=""
 
 def generate_vanilla_decklist(card_data, output_file=TEMP_DECKLIST_TXT):
     if output_file == "":
+        print("Using TEMP_decklist.txt...")
         output_file = TEMP_DECKLIST_TXT
 
     # Load the JSON data into a Python dictionary
@@ -112,10 +117,6 @@ def generate_vanilla_decklist(card_data, output_file=TEMP_DECKLIST_TXT):
 
         # Append quantity to the card name if quantity is greater than 1
         card_list.append(f"{quantity} {name}")
-
-    
-    # Write decklist to file
-    write_to_file("\n".join(card_list), output_file)
     
     return card_list
 
@@ -148,7 +149,7 @@ def get_card_urls(card_data):
     
     return card_images
 
-def create_new_deck_folder(base_folder_name, folder_parent="Decks"):
+def create_new_deck_folder(base_folder_name, deck_directory="Decks"):
     """
     Generates a unique folder name by appending an incremented number if the folder already exists.
 
@@ -162,27 +163,34 @@ def create_new_deck_folder(base_folder_name, folder_parent="Decks"):
     folder_name = sanitize_title(base_folder_name)
 
     # Loop until we find a folder name that doesn't exist
-    folder_name = increment_file_name(folder_parent + "\\", folder_name)
+    folder_name = increment_file_name(deck_directory + "\\", folder_name)
     deck_name = folder_name
-    folder_name = f'D:\Python\Python Projects\Proxy Prints\{folder_parent}\{folder_name}\deck_list'
+    deck_folder_name = f'D:\Python\Python Projects\Proxy Prints\{deck_directory}\{folder_name}\deck_list'
 
-    return folder_name, deck_name
+    return deck_folder_name, deck_name
 
-def increment_file_name(parent_path, file_name, extension=""):
+def increment_file_name(directory, file_name, extension=""):
+    """
+    Increments a file name by appending a number to it if the file already exists.
+
+    Parameters:
+        parent_path (str): The path to the parent directory.
+        file_name (str): The base file name.
+        extension (str): The file extension.
+
+    Returns:
+        str: A unique file name.
+    """
+    # Initialize the file name counter
     counter = 1
+    new_file_name = file_name + extension
 
-    path = parent_path + file_name + extension
+    # Loop until we find a file name that doesn't exist
+    while os.path.exists(os.path.join(directory, new_file_name)):
+        new_file_name = f"{file_name} ({counter}){extension}"
+        counter += 1
 
-    while os.path.exists(path):
-        if counter == 1:
-            file_name += f"_({counter})"
-            path = parent_path + "\\" + file_name + extension
-            counter += 1
-        else:
-            file_name = file_name.replace(f"_({counter - 1})", f"_({counter})")
-            path = parent_path + "\\" + file_name + extension
-            counter += 1
-    return file_name
+    return new_file_name
 
 def sanitize_title(title):
     """
@@ -252,6 +260,32 @@ def download_images(card_images, deck_name="TEMP_deck"):
                 print(f"Failed to download image for {card_name}: {e}")
     return folder_name
 
+def rotate_images_in_folder(folder_path, angle, output_folder=None):
+    # Use new folder next to decklist if none is specified
+    if output_folder is None:
+        output_folder = folder_path + "_rotated_" + str(angle)
+        os.makedirs(output_folder, exist_ok=True)
+    else:
+        os.makedirs(output_folder, exist_ok=True)
+
+    # Loop through all files in the folder
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        
+        # Only process files that are images
+        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
+            try:
+                # Open, rotate, and save the image
+                with Image.open(file_path) as img:
+                    rotated_img = img.rotate(angle, expand=True)
+                    rotated_img.save(os.path.join(output_folder, filename))
+                    print(f"Rotated {filename} by {angle} degrees.")
+            except Exception as e:
+                print(f"Could not rotate {filename}: {e}")
+
+    return output_folder
+
+
 def write_to_file(content, output_file):
     if WRITE_TEMP_FILES:
         try:
@@ -293,9 +327,12 @@ class PDFGenerator:
         cell_width = (self.page_width - 2 * self.margin - (self.grid_columns - 1) * self.padding) / self.grid_columns
         cell_height = (self.page_height - 2 * self.margin - (self.grid_rows - 1) * self.padding) / self.grid_rows
         
-        x_offset = self.margin
-        # top margin at 50%
-        y_offset = self.page_height - (self.margin / 2) - cell_height
+        top_margin = self.page_height # Starts at the top of the page
+        left_margin = 0 # Starts at the left of the page
+
+        # Print from the top left corner
+        x_offset = left_margin
+        y_offset = top_margin - cell_height
 
         for index, image_file in enumerate(image_files):
             image_path = os.path.join(image_folder, image_file)
@@ -331,20 +368,12 @@ class PDFGenerator:
 
 
 def main(url):
-    # Output files
-    # WARNING: If files are not specified, the function will overwrite the temp files used for testing
-    raw_output_file = ""
-    formatted_output_file = ""
-    decklist_output_file = ""
 
-    output_pdf = ""
+    raw_response = fetch_website_content(url)
 
-    formatted_deck_information, card_data = "", ""
-
-    response = fetch_website_content(url, raw_output_file)
-
-    if response:
-        formatted_deck_information, card_data, deck_title = format_response_content(response, formatted_output_file, url)
+    if raw_response:
+        # Format the response content and extract the deck information
+        formatted_deck_information, card_data, deck_title = format_response_content(raw_response, url)
 
         # Generate a vanilla decklist from the card data
         decklist = generate_vanilla_decklist(card_data)
@@ -355,29 +384,59 @@ def main(url):
 
         # Get card images
         card_images = get_card_urls(card_data)
+
+        # Print card image urls
         print("\nCard images:")
         for card_name, image_url in card_images.items():
             print(f"{card_name}: {image_url}")
 
-        image_folder = download_images(card_images, deck_name=deck_title)
+        new_deck_image_folder = download_images(card_images, deck_name=deck_title)
+
+        if WRITE_TEMP_FILES:
+            # Write raw response to file
+            write_to_file(raw_response, new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_RAW_RESPONSE.txt")
+
+            # Write formatted deck information to file\
+            write_to_file(formatted_deck_information, new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_FORMATTED_DECK_INFO.txt")
+
+            # Write decklist to file
+            write_to_file("\n".join(decklist), new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_DECKLIST.txt")
+
+        angle = 90
+
+        rotated_output_folder = rotate_images_in_folder(new_deck_image_folder, angle)
 
         # Generate a PDF with the card images
-        pdf_path = f"{image_folder.split('deck_list')[0]}PRINTABLE_{deck_title}.pdf"
+        pdf_path = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_{deck_title}.pdf"
 
         pdf_generator = PDFGenerator(pdf_path, padding=2, margin=20)
 
         print(f"\nGenerating PDF: {pdf_path} ...")
 
-        pdf_generator.add_images_to_pdf(image_folder)
+        pdf_generator.add_images_to_pdf(new_deck_image_folder)
+
+        print(f"\nPDF generated: {pdf_path}")
+
+        # Generate a PDF with the ROTATED card images
+        pdf_path = os.path.join(os.path.dirname(rotated_output_folder), f"PRINTABLE_{deck_title}_rotated_{angle}.pdf")
+
+        pdf_generator = PDFGenerator(pdf_path, padding=2, margin=20)
+
+        print(f"\nGenerating PDF: {pdf_path} ...")
+
+        pdf_generator.add_images_to_pdf(rotated_output_folder)
 
         print(f"\nPDF generated: {pdf_path}")
 
         # Open the PDF file
         os.startfile(pdf_path)
 
+
+URL = "https://archidekt.com/decks/9925883/wafag"
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fetch deck data from an Archidekt URL.")
     parser.add_argument("url", type=str, help="The URL of the Archidekt deck to process.")
-    args = parser.parse_args()
+    #args = parser.parse_args()
 
-    main(args.url)
+    main(URL)
