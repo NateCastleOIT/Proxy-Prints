@@ -17,6 +17,9 @@ TEMP_RAW_CONTENT = "TEMP_raw_content.txt"
 TEMP_FORMATTED_CONTENT = "TEMP_formatted_content.txt"
 TEMP_DECKLIST_TXT = "TEMP_decklist.txt"
 
+MTG_CARD_WIDTH_IN_POINTS= 2.5*72
+MTG_CARD_HEIGHT_IN_POINTS= 3.5*72
+
 WRITE_TEMP_FILES = True
 
 def fetch_website_content(url, output_file=TEMP_RAW_CONTENT):
@@ -297,7 +300,7 @@ def write_to_file(content, output_file):
 
 
 class PDFGenerator:
-    def __init__(self, output_file, page_size=letter, grid_size=(3, 3), padding=10, margin=20):
+    def __init__(self, output_file, page_size=letter, padding=10, margin=20):
         """
         Initializes the PDF generator with specified parameters.
 
@@ -310,52 +313,63 @@ class PDFGenerator:
         """
         self.output_file = output_file
         self.page_width, self.page_height = page_size
-        self.grid_rows, self.grid_columns = grid_size
         self.padding = padding
         self.margin = margin
         self.canvas = canvas.Canvas(output_file, pagesize=page_size)
     
-    def add_images_to_pdf(self, image_folder):
-        """
-        Arranges images from the folder into a grid and saves them in the PDF.
+    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,)):
+            """
+            Arranges images into a specified grid size and saves them in the PDF.
+            """
+            image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
 
-        Parameters:
-            image_folder (str): Folder containing the images to add to the PDF.
-        """
-        image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
-        
-        cell_width = (self.page_width - 2 * self.margin - (self.grid_columns - 1) * self.padding) / self.grid_columns
-        cell_height = (self.page_height - 2 * self.margin - (self.grid_rows - 1) * self.padding) / self.grid_rows
-        
-        top_margin = self.page_height # Starts at the top of the page
-        left_margin = 0 # Starts at the left of the page
+            # grids = (1, 3), (2, 2), (3, 1)
+            # positions = (0, 0), (MTG_CARD_HEIGHT_IN_POINTS, 0), (0, MTG_CARD_HEIGHT_IN_POINTS)
+            # rotated = (90, 0, 0)
 
-        # Print from the top left corner
-        x_offset = left_margin
-        y_offset = top_margin - cell_height
+            image_index = 0
 
-        for index, image_file in enumerate(image_files):
-            image_path = os.path.join(image_folder, image_file)
+            for grid_index, grid in enumerate(grids):
+                
+                grid_columns, grid_rows = grid
 
-            image = self.process_image(image_path)
+                cell_width = MTG_CARD_WIDTH_IN_POINTS
+                cell_height = MTG_CARD_HEIGHT_IN_POINTS
 
-            col = index % self.grid_columns
-            row = index // self.grid_columns % self.grid_rows
+                if angle[grid_index]:
+                    cell_width, cell_height = cell_height, cell_width
 
-            x = x_offset + col * (cell_width + self.padding)
-            y = y_offset - row * (cell_height + self.padding)
-            
-            self.canvas.drawImage(image, x, y, width=cell_width, height=cell_height)
 
-            if (index + 1) % (self.grid_columns * self.grid_rows) == 0:
+                x_offset = positions[grid_index][0]
+                y_offset = -positions[grid_index][1] + self.page_height - cell_height
+
+
+                for index, image_file in enumerate(image_files):
+                    image_path = os.path.join(image_folder, image_file)
+                    image = self.process_image(image_path, angle[grid_index-1])[0]
+
+                    col = index % grid_columns
+                    row = index // grid_columns % grid_rows
+
+                    x = x_offset + col * (cell_width + self.padding)
+                    y = y_offset - row * (cell_height + self.padding)
+                    
+                    self.canvas.drawImage(image, x, y, width=cell_width, height=cell_height)
+
+                    if (index + 1) % (grid_columns * grid_rows) == 0:
+                        break
+
                 self.canvas.showPage()  # Start a new page after filling the grid
 
-        self.canvas.save()
+            self.canvas.save()
 
-    def process_image(self, image_path):
+
+    def process_image(self, image_path, angle=0,):
         with Image.open(image_path) as img:
+            if angle:
+                img = img.rotate(angle, expand=True)
             img.save(image_path)  # Overwrites the image or use a temp file if needed
-        return image_path
+            return image_path, img
 
 
 # TODO: SCG is the class we want to use for the specific printing
@@ -402,34 +416,24 @@ def main(url):
             # Write decklist to file
             write_to_file("\n".join(decklist), new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_DECKLIST.txt")
 
-        angle = 90
-
-        rotated_output_folder = rotate_images_in_folder(new_deck_image_folder, angle)
-
         # Generate a PDF with the card images
         pdf_path = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_{deck_title}.pdf"
+        pdf_path2 = f"{new_deck_image_folder.split('deck_list')[0]}NEW_PRINTABLE_{deck_title}.pdf"
 
-        pdf_generator = PDFGenerator(pdf_path, padding=2, margin=20)
+        # print(f"\nGenerating PDF: {pdf_path} ...")
+        # pdf_generator = PDFGenerator(pdf_path, margin=0, padding=0)
+        # pdf_generator.add_images_to_pdf(new_deck_image_folder, grid_size=(3, 3), position=(10, 10))
+        # print(f"\nPDF generated: {pdf_path}")
 
-        print(f"\nGenerating PDF: {pdf_path} ...")
+        # os.startfile(pdf_path)
 
-        pdf_generator.add_images_to_pdf(new_deck_image_folder)
-
-        print(f"\nPDF generated: {pdf_path}")
-
-        # Generate a PDF with the ROTATED card images
-        pdf_path = os.path.join(os.path.dirname(rotated_output_folder), f"PRINTABLE_{deck_title}_rotated_{angle}.pdf")
-
-        pdf_generator = PDFGenerator(pdf_path, padding=2, margin=20)
-
-        print(f"\nGenerating PDF: {pdf_path} ...")
-
-        pdf_generator.add_images_to_pdf(rotated_output_folder)
-
-        print(f"\nPDF generated: {pdf_path}")
+        print(f"\nGenerating PDF: {pdf_path2} ...")
+        pdf_generator = PDFGenerator(pdf_path2, margin=0, padding=0)
+        pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((1, 3),), positions=((0, 0),), angle=(90,))
+        print(f"\nPDF generated: {pdf_path2}")
 
         # Open the PDF file
-        os.startfile(pdf_path)
+        os.startfile(pdf_path2)
 
 
 URL = "https://archidekt.com/decks/9925883/wafag"
