@@ -1,76 +1,83 @@
 ```markdown
-# Archidekt Decklist Fetcher
+# Archidekt Deck Image Downloader and PDF Generator
 
-This Python program fetches a Magic: The Gathering decklist from the Archidekt website, formats the response, and generates a vanilla decklist. It uses the `requests` library to handle HTTP requests and `BeautifulSoup` for parsing the HTML content.
+This program fetches deck information from Archidekt, a popular deck-building website for Magic: The Gathering. It retrieves card information and images from a specified Archidekt deck URL, organizes the images in grids, and generates a printable PDF for easy card viewing or proxy printing. The program supports creating multiple grid configurations and customizes image placement and rotation in the generated PDF.
 
 ## Features
-
-- Fetches deck information from Archidekt.
-- Extracts metadata such as title, author, and description.
-- Parses and pretty-prints JSON data embedded in the webpage.
-- Generates a formatted decklist with card names and quantities.
-- Writes output to text files for easy access.
+- Fetches deck data from Archidekt and processes it.
+- Downloads card images and organizes them into a unique folder.
+- Generates a PDF containing card images arranged in customizable grids.
+- Supports different grid configurations, padding, and rotation options.
+- Automatically opens the generated PDF upon completion.
 
 ## Requirements
+- **Python 3.6+**
+- **Libraries**:
+  - `argparse`: For command-line argument parsing.
+  - `requests`: For sending HTTP requests.
+  - `os`: For directory and file management.
+  - `re`: For handling regex operations.
+  - `json`: For processing JSON data.
+  - `BeautifulSoup` from `bs4`: For parsing HTML.
+  - `Pillow`: For handling image operations.
+  - `reportlab`: For generating PDF files.
 
-To run this program, you need to have Python 3.x installed along with the following libraries:
-
-- `requests`
-- `beautifulsoup4`
-
-You can install the required libraries using the following command:
-
+You can install all required libraries using:
 ```bash
-pip install requests beautifulsoup4
+pip install requests beautifulsoup4 pillow reportlab
 ```
 
 ## Usage
+1. **Running the Program**: Run the script with Python. The program will prompt you to enter an Archidekt deck URL. After processing the URL, it will fetch the deck data, download the images, and generate a PDF.
 
-1. Clone this repository or download the source code.
-2. Navigate to the project directory.
-3. Open the script in a Python environment.
-4. Modify the `url` variable to the Archidekt deck URL you want to fetch.
-5. Run the script. The output files will be generated in the project directory.
-
-```python
-# Example URL to test
-url = "https://archidekt.com/decks/9189676/dsc_death_toll"
+```bash
+python your_script.py
 ```
 
-### Output Files
+2. **Interactive Mode**: You can input multiple URLs in sequence. To exit, simply press Enter without typing a URL.
 
-The program generates the following output files:
+### Command-line Arguments
+This script also supports using a URL as a command-line argument.
 
-- `TEMP_raw_content.txt`: Contains the raw HTML content fetched from the URL.
-- `TEMP_formatted_content.txt`: Contains the formatted content including metadata and pretty-printed JSON data.
-- `TEMP_decklist.txt`: Contains the generated decklist with card names and quantities.
+```bash
+python your_script.py "https://archidekt.com/decks/your_deck_url"
+```
 
 ## Example Output
+Upon entering a URL, the program will:
+1. Retrieve and process the deck's card data.
+2. Download card images and save them in a unique folder.
+3. Generate two PDFs:
+   - One with a 3x3 grid layout.
+   - Another with a custom layout based on 1x3, 2x2, and 3x1 grids.
+4. Automatically open both PDFs for preview.
 
-```
-Decklist:
-1 Brainstone
-4 Plains
-3 Swamp
-1 Mesa Enchantress
-1 Aminatou, Veil Piercer
-```
+## PDF Customization
+The PDF layout and image grid configurations are customizable:
+- **Grids**: Specify the number of rows and columns (e.g., `grids=((3, 3),)` for a 3x3 grid).
+- **Positions**: Set custom positions for each grid.
+- **Rotation**: Define rotation angles for each grid layout.
 
-## To-Do List
+## Program Structure
+- **fetch_website_content**: Fetches HTML content from the provided URL.
+- **format_response_content**: Parses HTML and extracts JSON data.
+- **generate_vanilla_decklist**: Produces a plain-text decklist from the card data.
+- **get_card_urls**: Extracts card names and image URLs.
+- **create_new_deck_folder**: Generates a unique folder for each deck's images.
+- **download_images**: Downloads and saves card images to the specified folder.
+- **PDFGenerator**: A class for creating and customizing PDF layouts of card images.
 
-- Implement support for fetching decklists from other websites.
-- Improve error handling for network issues and JSON parsing.
-- Allow command line arguments for specifying the URL and output files.
-- Refactor function names for better clarity.
-- Generate the decklist file based on deck name, author, and date.
+## Temporary Files
+Temporary files are created if `WRITE_TEMP_FILES` is set to `True`, storing raw and formatted deck information for debugging purposes. Files include:
+- `TEMP_raw_content.txt`: Raw HTML response.
+- `TEMP_formatted_content.txt`: Extracted and formatted content.
+- `TEMP_decklist.txt`: Generated deck list.
+
+## Future Enhancements
+- Support for multiple deck-building websites.
+- Automatic detection of site structure and data extraction methods.
+- Enhanced CLI arguments for specifying grid layouts, image rotation, and other options.
 
 ## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Archidekt](https://archidekt.com/) for providing the decklist data.
-- [Requests](https://docs.python-requests.org/en/latest/) for easy HTTP requests.
-- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) for HTML parsing.
+This project is licensed under the Apache 2.0 License.
 ```
