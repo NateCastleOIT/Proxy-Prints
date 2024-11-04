@@ -92,9 +92,6 @@ def format_response_content(response, url="", output_file=TEMP_FORMATTED_CONTENT
             f"JSON data:\n{data_pretty}"
         )
 
-        # Write content to file
-        write_to_file(formatted_content, output_file)
-
         return formatted_content, data_pretty, sanitize_title(title.split("•")[0].strip())
 
     except requests.exceptions.RequestException as e:
@@ -349,7 +346,7 @@ class PDFGenerator:
 
 def main(url):
 
-    raw_response = fetch_website_content(url)
+    raw_response = fetch_website_content(url, )
 
     if raw_response:
         # Format the response content and extract the deck information
@@ -396,7 +393,7 @@ def main(url):
         print(f"\nGenerating PDF...")
         pdf_generator = PDFGenerator(pdf_path2, margin=0, padding=2)
         pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((1, 3),(2,2),(3,1)), positions=((0, 0),(MTG_CARD_HEIGHT_IN_POINTS + 2, 0),(0, 3*MTG_CARD_WIDTH_IN_POINTS + 6),), angle=(90,0,0,))
-        print(f"\nPDF generated: {pdf_path2}")
+        print(f"\nPDF generated: {pdf_path2}\n\n")
 
         # Open the PDF file
         os.startfile(pdf_path2)
@@ -407,9 +404,14 @@ URL_TOKENS = "https://archidekt.com/decks/9925883/wafag"
 URL = "https://archidekt.com/decks/9929643/bing_bong"
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Fetch deck data from an Archidekt URL.")
-    parser.add_argument("url", type=str, help="The URL of the Archidekt deck to process.")
-    #args = parser.parse_args()
+    while True:
+        # Prompt for URL input
+        URL = input("Enter the Archidekt deck URL (or press Enter to quit): ").strip()
+        print("\n")
+        
+        # If the input is empty, break out of the loop
+        if not URL:
+            print("No URL provided. Exiting.")
+            break
 
-    main(URL_TOKENS)
-    main(URL)
+        main(URL)
