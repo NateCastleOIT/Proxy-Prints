@@ -17,8 +17,8 @@ TEMP_RAW_CONTENT = "TEMP_raw_content.txt"
 TEMP_FORMATTED_CONTENT = "TEMP_formatted_content.txt"
 TEMP_DECKLIST_TXT = "TEMP_decklist.txt"
 
-MTG_CARD_WIDTH_IN_POINTS= 2.5*72
-MTG_CARD_HEIGHT_IN_POINTS= 3.5*72
+MTG_CARD_WIDTH_IN_POINTS= 2.46*72
+MTG_CARD_HEIGHT_IN_POINTS= 3.46*72
 
 WRITE_TEMP_FILES = True
 
@@ -344,22 +344,20 @@ class PDFGenerator:
                 y_offset = -positions[grid_index][1] + self.page_height - cell_height
 
 
-                for index, image_file in enumerate(image_files):
-                    image_path = os.path.join(image_folder, image_file)
-                    image = self.process_image(image_path, angle[grid_index-1])[0]
+                for row in range(grid_rows):
+                    for col in range(grid_columns):
 
-                    col = index % grid_columns
-                    row = index // grid_columns % grid_rows
+                        image_path = os.path.join(image_folder, image_files[image_index])
+                        image = self.process_image(image_path, angle[grid_index])[0]
 
-                    x = x_offset + col * (cell_width + self.padding)
-                    y = y_offset - row * (cell_height + self.padding)
-                    
-                    self.canvas.drawImage(image, x, y, width=cell_width, height=cell_height)
+                        x = x_offset + col * (cell_width + self.padding)
+                        y = y_offset - row * (cell_height + self.padding)
+                        
+                        self.canvas.drawImage(image, x, y, width=cell_width, height=cell_height)
 
-                    if (index + 1) % (grid_columns * grid_rows) == 0:
-                        break
+                        image_index += 1
 
-                self.canvas.showPage()  # Start a new page after filling the grid
+            self.canvas.showPage()  # Start a new page after filling the grid
 
             self.canvas.save()
 
@@ -420,16 +418,16 @@ def main(url):
         pdf_path = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_{deck_title}.pdf"
         pdf_path2 = f"{new_deck_image_folder.split('deck_list')[0]}NEW_PRINTABLE_{deck_title}.pdf"
 
-        # print(f"\nGenerating PDF: {pdf_path} ...")
-        # pdf_generator = PDFGenerator(pdf_path, margin=0, padding=0)
-        # pdf_generator.add_images_to_pdf(new_deck_image_folder, grid_size=(3, 3), position=(10, 10))
-        # print(f"\nPDF generated: {pdf_path}")
+        print(f"\nGenerating PDF: {pdf_path} ...")
+        pdf_generator = PDFGenerator(pdf_path, margin=0, padding=2)
+        pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,))
+        print(f"\nPDF generated: {pdf_path}")
 
-        # os.startfile(pdf_path)
+        os.startfile(pdf_path)
 
         print(f"\nGenerating PDF: {pdf_path2} ...")
-        pdf_generator = PDFGenerator(pdf_path2, margin=0, padding=0)
-        pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((1, 3),), positions=((0, 0),), angle=(90,))
+        pdf_generator = PDFGenerator(pdf_path2, margin=0, padding=2)
+        pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((1, 3),(2,2),(3,1)), positions=((0, 0),(MTG_CARD_HEIGHT_IN_POINTS + 2, 0),(0, 3*MTG_CARD_WIDTH_IN_POINTS + 6),), angle=(90,0,0,))
         print(f"\nPDF generated: {pdf_path2}")
 
         # Open the PDF file
