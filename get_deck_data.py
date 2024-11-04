@@ -328,36 +328,38 @@ class PDFGenerator:
             # rotated = (90, 0, 0)
 
             image_index = 0
+            while image_index < len(image_files):
+                for grid_index, grid in enumerate(grids):
+                    
+                    grid_columns, grid_rows = grid
 
-            for grid_index, grid in enumerate(grids):
-                
-                grid_columns, grid_rows = grid
+                    cell_width = MTG_CARD_WIDTH_IN_POINTS
+                    cell_height = MTG_CARD_HEIGHT_IN_POINTS
 
-                cell_width = MTG_CARD_WIDTH_IN_POINTS
-                cell_height = MTG_CARD_HEIGHT_IN_POINTS
-
-                if angle[grid_index]:
-                    cell_width, cell_height = cell_height, cell_width
-
-
-                x_offset = positions[grid_index][0]
-                y_offset = -positions[grid_index][1] + self.page_height - cell_height
+                    if angle[grid_index]:
+                        cell_width, cell_height = cell_height, cell_width
 
 
-                for row in range(grid_rows):
-                    for col in range(grid_columns):
+                    x_offset = positions[grid_index][0]
+                    y_offset = -positions[grid_index][1] + self.page_height - cell_height
 
-                        image_path = os.path.join(image_folder, image_files[image_index])
-                        image = self.process_image(image_path, angle[grid_index])[0]
 
-                        x = x_offset + col * (cell_width + self.padding)
-                        y = y_offset - row * (cell_height + self.padding)
-                        
-                        self.canvas.drawImage(image, x, y, width=cell_width, height=cell_height)
+                    for row in range(grid_rows):
+                        for col in range(grid_columns):
+                            if image_index >= len(image_files):
+                                continue
 
-                        image_index += 1
+                            image_path = os.path.join(image_folder, image_files[image_index])
+                            image = self.process_image(image_path, angle[grid_index])[0]
 
-            self.canvas.showPage()  # Start a new page after filling the grid
+                            x = x_offset + col * (cell_width + self.padding)
+                            y = y_offset - row * (cell_height + self.padding)
+                            
+                            self.canvas.drawImage(image, x, y, width=cell_width, height=cell_height)
+
+                            image_index += 1
+
+                self.canvas.showPage()  # Start a new page after filling the grid
 
             self.canvas.save()
 
@@ -415,8 +417,8 @@ def main(url):
             write_to_file("\n".join(decklist), new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_DECKLIST.txt")
 
         # Generate a PDF with the card images
-        pdf_path = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_{deck_title}.pdf"
-        pdf_path2 = f"{new_deck_image_folder.split('deck_list')[0]}NEW_PRINTABLE_{deck_title}.pdf"
+        pdf_path = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_9_{deck_title}.pdf"
+        pdf_path2 = f"{new_deck_image_folder.split('deck_list')[0]}NEW_PRINTABLE_10_{deck_title}.pdf"
 
         print(f"\nGenerating PDF: {pdf_path} ...")
         pdf_generator = PDFGenerator(pdf_path, margin=0, padding=2)
@@ -434,11 +436,14 @@ def main(url):
         os.startfile(pdf_path2)
 
 
-URL = "https://archidekt.com/decks/9925883/wafag"
+URL_TOKENS = "https://archidekt.com/decks/9925883/wafag"
+
+URL = "https://archidekt.com/decks/9929643/bing_bong"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fetch deck data from an Archidekt URL.")
     parser.add_argument("url", type=str, help="The URL of the Archidekt deck to process.")
     #args = parser.parse_args()
 
+    main(URL_TOKENS)
     main(URL)
