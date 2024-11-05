@@ -400,9 +400,9 @@ def main(url):
         os.startfile(pdf_path2)
 
 
-URL_TOKENS = "https://archidekt.com/decks/9925883/wafag"
+TEST_URL_TOKENS = "https://archidekt.com/decks/9925883/wafag"
 
-URL = "https://archidekt.com/decks/9929643/bing_bong"
+TEST_URL = "https://archidekt.com/decks/9929643/bing_bong"
 
 if __name__ == "__main__":
     while True:
