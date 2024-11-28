@@ -12,6 +12,8 @@ from reportlab.pdfgen import canvas
 
 ARCHIDEKT_TAG = 'script'
 ARCHIDEKT_TAG_ID = '__NEXT_DATA__'
+MTGGOLDFISH_TAG = 'script'
+MTGGOLDFISH_TAG_ID = 'deck'
 
 TEMP_RAW_CONTENT = "TEMP_raw_content.txt"
 TEMP_FORMATTED_CONTENT = "TEMP_formatted_content.txt"
@@ -21,6 +23,7 @@ MTG_CARD_WIDTH_IN_POINTS= 2.46*72 # 2.46 inches, 1 inch = 72 points
 MTG_CARD_HEIGHT_IN_POINTS= 3.46*72 # 3.46 inches, 1 inch = 72 points
 
 WRITE_TEMP_FILES = True
+PRINT_CARD_IMAGE_URLS = False
 
 def fetch_website_content(url, output_file=TEMP_RAW_CONTENT):
     if output_file == "":
@@ -28,9 +31,19 @@ def fetch_website_content(url, output_file=TEMP_RAW_CONTENT):
         output_file = TEMP_RAW_CONTENT
 
     try:
-        response = requests.get(url)
+        headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
+                }
+
+        response = requests.get(url, headers=headers)
         response.raise_for_status() # raise an exception in case of http errors
         # print("Response content:\n", response.text)
+
+        if WRITE_TEMP_FILES:
+            # Write raw response to file
+            soup = BeautifulSoup(response.text, 'html.parser')
+            write_to_file(soup.prettify(), "TEMP_RAW_RESPONSE.txt")
+            write_to_file(soup.get_text(), "TEMP_RAW_TEXT_RESPONSE.txt")
 
         return response.text
 
@@ -38,7 +51,22 @@ def fetch_website_content(url, output_file=TEMP_RAW_CONTENT):
         print("Error fetching website content: ", e)
         return None
 
-def format_response_content(response, url="", output_file=TEMP_FORMATTED_CONTENT):
+def mtggoldfish_format_response_content(response, url="", output_file=TEMP_FORMATTED_CONTENT):
+    soup = BeautifulSoup(response, 'html.parser')
+
+    card_data = soup.find('table', class_='deck-view-deck-table')
+
+    card_data = json.loads(card_data)
+
+    data_pretty = json.dumps(card_data, indent=2)
+
+    write_to_file(data_pretty, output_file)
+
+
+
+    #script_tag = soup.find_all()
+
+def archidekt_format_response_content(response, url="", output_file=TEMP_FORMATTED_CONTENT):
     if output_file == "":
         print("Using TEMP_formatted_content.txt...")
         output_file = TEMP_FORMATTED_CONTENT
@@ -47,6 +75,13 @@ def format_response_content(response, url="", output_file=TEMP_FORMATTED_CONTENT
     try:
         soup = BeautifulSoup(response, 'html.parser')
         
+        script_tag = None
+        if url.startswith("https://archidekt.com/decks/"):
+            script_tag = soup.find(ARCHIDEKT_TAG, id=ARCHIDEKT_TAG_ID)
+        else:
+            print("Site not supported")
+            return
+
         # Extract details
         title = soup.find('title').text if soup.find('title') else "No title found"
         description = soup.find('meta', {'name': 'description'})
@@ -55,15 +90,6 @@ def format_response_content(response, url="", output_file=TEMP_FORMATTED_CONTENT
         author_content = author['content'] if author else "No author found"
         og_image = soup.find('meta', {'property': 'og:image'})
         og_image_url = og_image['content'] if og_image else "No image found"
-
-
-        # TODO: Adjust for different sites
-        script_tag = None
-        if url.startswith("https://archidekt.com/decks/"):
-            script_tag = soup.find(ARCHIDEKT_TAG, id=ARCHIDEKT_TAG_ID)
-        else:
-            print("Site not supported")
-            return
 
         # Default JSON data
         data_pretty = "No JSON data found"
@@ -270,6 +296,62 @@ def write_to_file(content, output_file):
         except Exception as e:
             print(f"An error occurred: {e}")
 
+def get_cards_from_any_link(url):
+    raw_response = fetch_website_content(url, )
+
+    if "mtggoldfish" in url:
+        mtggoldfish_format_response_content(raw_response, url)
+
+    if raw_response:
+        # Format the response content and extract the deck information
+        formatted_deck_information, card_data, deck_title = archidekt_format_response_content(raw_response, url)
+
+        # Generate a vanilla decklist from the card data
+        decklist = generate_vanilla_decklist(card_data)
+
+        # Print the decklist
+        print("\n\nDecklist:")
+        print("\n".join(decklist))
+
+        # Get card images
+        card_images = get_card_urls(card_data)
+        new_deck_image_folder = download_images(card_images, deck_name=deck_title)
+
+        # Print card image urls
+        if PRINT_CARD_IMAGE_URLS:
+            print("\nCard images:")
+            for card_name, image_url in card_images.items():
+                print(f"{card_name}: {image_url}")
+
+
+        if WRITE_TEMP_FILES:
+            # Write raw response to file
+            write_to_file(raw_response, new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_RAW_RESPONSE.txt")
+
+            # Write formatted deck information to file\
+            write_to_file(formatted_deck_information, new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_FORMATTED_DECK_INFO.txt")
+
+            # Write decklist to file
+            write_to_file("\n".join(decklist), new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_DECKLIST.txt")
+
+        # Generate a PDF with the card images
+        # pdf_path = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_9_{deck_title}.pdf"
+        pdf_path2 = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_10_{deck_title}.pdf"
+
+        # print(f"\nGenerating PDF...")
+        # pdf_generator = PDFGenerator(pdf_path, margin=0, padding=2)
+        # pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,))
+        # print(f"\nPDF generated: {pdf_path}")
+
+        # os.startfile(pdf_path)
+
+        print(f"\nGenerating PDF...")
+        pdf_generator = PDFGenerator(pdf_path2, margin=0, padding=2)
+        pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((1, 3),(2,2),(3,1)), positions=((0, 0),(MTG_CARD_HEIGHT_IN_POINTS + 2, 0),(0, 3*MTG_CARD_WIDTH_IN_POINTS + 6),), angle=(90,0,0,))
+        print(f"\nPDF generated: {pdf_path2}\n\n")
+
+        # Open the PDF file
+        os.startfile(pdf_path2)
 
 class PDFGenerator:
     def __init__(self, output_file, page_size=letter, padding=10, margin=20):
@@ -346,68 +428,17 @@ class PDFGenerator:
 
 
 def main(url):
+    get_cards_from_any_link(url)
 
-    raw_response = fetch_website_content(url, )
+TEST_URL_ARCHIDEKT = "https://archidekt.com/decks/9929643/bing_bong"
 
-    if raw_response:
-        # Format the response content and extract the deck information
-        formatted_deck_information, card_data, deck_title = format_response_content(raw_response, url)
+TEST_URL_MTGGOLDFISH = "https://www.mtggoldfish.com/archetype/standard-golgari-midrange-dmu#paper"
 
-        # Generate a vanilla decklist from the card data
-        decklist = generate_vanilla_decklist(card_data)
-
-        # Print the decklist
-        print("\n\nDecklist:")
-        print("\n".join(decklist))
-
-        # Get card images
-        card_images = get_card_urls(card_data)
-
-        # Print card image urls
-        # print("\nCard images:")
-        # for card_name, image_url in card_images.items():
-        #     print(f"{card_name}: {image_url}")
-
-        new_deck_image_folder = download_images(card_images, deck_name=deck_title)
-
-        if WRITE_TEMP_FILES:
-            # Write raw response to file
-            write_to_file(raw_response, new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_RAW_RESPONSE.txt")
-
-            # Write formatted deck information to file\
-            write_to_file(formatted_deck_information, new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_FORMATTED_DECK_INFO.txt")
-
-            # Write decklist to file
-            write_to_file("\n".join(decklist), new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_DECKLIST.txt")
-
-        # Generate a PDF with the card images
-        pdf_path = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_9_{deck_title}.pdf"
-        pdf_path2 = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_10_{deck_title}.pdf"
-
-        print(f"\nGenerating PDF...")
-        pdf_generator = PDFGenerator(pdf_path, margin=0, padding=2)
-        pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,))
-        print(f"\nPDF generated: {pdf_path}")
-
-        os.startfile(pdf_path)
-
-        print(f"\nGenerating PDF...")
-        pdf_generator = PDFGenerator(pdf_path2, margin=0, padding=2)
-        pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((1, 3),(2,2),(3,1)), positions=((0, 0),(MTG_CARD_HEIGHT_IN_POINTS + 2, 0),(0, 3*MTG_CARD_WIDTH_IN_POINTS + 6),), angle=(90,0,0,))
-        print(f"\nPDF generated: {pdf_path2}\n\n")
-
-        # Open the PDF file
-        os.startfile(pdf_path2)
-
-
-TEST_URL_TOKENS = "https://archidekt.com/decks/9925883/wafag"
-
-TEST_URL = "https://archidekt.com/decks/9929643/bing_bong"
 
 if __name__ == "__main__":
     while True:
         # Prompt for URL input
-        URL = input("Enter the Archidekt deck URL (or press Enter to quit): ").strip()
+        URL = TEST_URL_MTGGOLDFISH#input("Enter the Archidekt deck URL (or press Enter to quit): ").strip()
         print("\n")
         
         # If the input is empty, break out of the loop
