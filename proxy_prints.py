@@ -340,14 +340,21 @@ def get_cards_from_any_link(url):
 
         # print(f"\nGenerating PDF...")
         # pdf_generator = PDFGenerator(pdf_path, margin=0, padding=2)
-        # pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,))
+        # pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=((9, 9),))
         # print(f"\nPDF generated: {pdf_path}")
 
         # os.startfile(pdf_path)
 
         print(f"\nGenerating PDF...")
         pdf_generator = PDFGenerator(pdf_path2, margin=0, padding=2)
-        pdf_generator.add_images_to_pdf(new_deck_image_folder, grids=((1, 3),(2,2),(3,1)), positions=((0, 0),(MTG_CARD_HEIGHT_IN_POINTS + 2, 0),(0, 3*MTG_CARD_WIDTH_IN_POINTS + 6),), angle=(90,0,0,))
+        pdf_generator.add_images_to_pdf(new_deck_image_folder,
+         grids=((1, 3),(2,2),(3,1)), 
+         positions=
+         ((0, 0),
+         (MTG_CARD_HEIGHT_IN_POINTS + 2, 0),
+         (0, 3*MTG_CARD_WIDTH_IN_POINTS + 6),
+         ),
+         angle=(90,0,0,))
         print(f"\nPDF generated: {pdf_path2}\n\n")
 
         # Open the PDF file
@@ -371,10 +378,12 @@ class PDFGenerator:
         self.margin = margin
         self.canvas = canvas.Canvas(output_file, pagesize=page_size)
     
-    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,)):
+    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(9, 9)):
             """
             Arranges images into a specified grid size and saves them in the PDF.
             """
+            positions = [(position[0] + offset[0], position[1] + offset[1]) for position in positions]
+
             image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
 
             image_index = 0
@@ -438,7 +447,8 @@ TEST_URL_MTGGOLDFISH = "https://www.mtggoldfish.com/archetype/standard-golgari-m
 if __name__ == "__main__":
     while True:
         # Prompt for URL input
-        URL = TEST_URL_MTGGOLDFISH#input("Enter the Archidekt deck URL (or press Enter to quit): ").strip()
+        URL = TEST_URL_ARCHIDEKT
+        URL  = input("Enter the Archidekt deck URL (or press Enter to quit): ").strip()
         print("\n")
         
         # If the input is empty, break out of the loop
