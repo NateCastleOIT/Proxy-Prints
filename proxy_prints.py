@@ -378,7 +378,7 @@ class PDFGenerator:
         self.margin = margin
         self.canvas = canvas.Canvas(output_file, pagesize=page_size)
     
-    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(9, 9)):
+    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(7, 7)):
             """
             Arranges images into a specified grid size and saves them in the PDF.
             """
