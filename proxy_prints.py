@@ -421,7 +421,7 @@ def get_cards_from_any_link(url):
          positions=
          ((0, 0),
          (MTG_CARD_HEIGHT_IN_POINTS + 2, 0),
-         (0, 3*MTG_CARD_WIDTH_IN_POINTS + 6),
+         (MTG_CARD_HEIGHT_IN_POINTS - MTG_CARD_WIDTH_IN_POINTS, 3*MTG_CARD_WIDTH_IN_POINTS + 6),
          ),
          angle=(90,0,0,))
         print(f"\nPDF generated: {pdf_path2}\n\n")
