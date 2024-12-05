@@ -14,7 +14,7 @@ Proxy Prints is a Python-based tool for Magic: The Gathering (MTG) players who w
 
 1. **Download the Project**: Clone or download this repository.
 2. **Run the Executable**:
-   - Navigate to `dist/` and run `proxy_prints.exe`.
+   - Run `proxy_prints.exe`.
 3. **Input Deck URL**: Enter the URL of the Archidekt deck you wish to print proxies for. Example URL: `https://archidekt.com/decks/12345678/my_deck`.
 4. **Output**:
    - The program creates a printable PDF containing images of all the cards in the deck. Each PDF page has a grid of card images, sized for easy cutting and sleeving.
