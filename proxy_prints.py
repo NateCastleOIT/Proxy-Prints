@@ -296,6 +296,75 @@ def write_to_file(content, output_file):
         except Exception as e:
             print(f"An error occurred: {e}")
 
+class PDFGenerator:
+    def __init__(self, output_file, page_size=letter, padding=10, margin=20):
+        """
+        Initializes the PDF generator with specified parameters.
+
+        Parameters:
+            output_file (str): The file path for the generated PDF.
+            page_size (tuple): The size of the PDF pages.
+            grid_size (tuple): The number of images per row and column.
+            padding (int): The space between images.
+            margin (int): The margin around images.
+        """
+        self.output_file = output_file
+        self.page_width, self.page_height = page_size
+        self.padding = padding
+        self.margin = margin
+        self.canvas = canvas.Canvas(output_file, pagesize=page_size)
+    
+    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(4, 8)):
+            """
+            Arranges images into a specified grid size and saves them in the PDF.
+            """
+            positions = [(position[0] + offset[0], position[1] + offset[1]) for position in positions]
+
+            image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
+
+            image_index = 0
+            while image_index < len(image_files):
+                for grid_index, grid in enumerate(grids):
+                    
+                    grid_columns, grid_rows = grid
+
+                    cell_width = MTG_CARD_WIDTH_IN_POINTS
+                    cell_height = MTG_CARD_HEIGHT_IN_POINTS
+
+                    if angle[grid_index]:
+                        cell_width, cell_height = cell_height, cell_width
+
+
+                    x_offset = positions[grid_index][0]
+                    y_offset = -positions[grid_index][1] + self.page_height - cell_height
+
+
+                    for row in range(grid_rows):
+                        for col in range(grid_columns):
+                            if image_index >= len(image_files):
+                                continue
+
+                            image_path = os.path.join(image_folder, image_files[image_index])
+                            image = self.process_image(image_path, angle[grid_index])[0]
+
+                            x = x_offset + col * (cell_width + self.padding)
+                            y = y_offset - row * (cell_height + self.padding)
+                            
+                            self.canvas.drawImage(image, x, y, width=cell_width, height=cell_height)
+
+                            image_index += 1
+
+                self.canvas.showPage()  # Start a new page after filling the grid
+
+            self.canvas.save()
+
+    def process_image(self, image_path, angle=0,):
+        with Image.open(image_path) as img:
+            if angle:
+                img = img.rotate(angle, expand=True)
+            img.save(image_path)  # Overwrites the image or use a temp file if needed
+            return image_path, img
+
 def get_cards_from_any_link(url):
     raw_response = fetch_website_content(url, )
 
@@ -359,75 +428,6 @@ def get_cards_from_any_link(url):
 
         # Open the PDF file
         os.startfile(pdf_path2)
-
-class PDFGenerator:
-    def __init__(self, output_file, page_size=letter, padding=10, margin=20):
-        """
-        Initializes the PDF generator with specified parameters.
-
-        Parameters:
-            output_file (str): The file path for the generated PDF.
-            page_size (tuple): The size of the PDF pages.
-            grid_size (tuple): The number of images per row and column.
-            padding (int): The space between images.
-            margin (int): The margin around images.
-        """
-        self.output_file = output_file
-        self.page_width, self.page_height = page_size
-        self.padding = padding
-        self.margin = margin
-        self.canvas = canvas.Canvas(output_file, pagesize=page_size)
-    
-    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(9, 12)):
-            """
-            Arranges images into a specified grid size and saves them in the PDF.
-            """
-            positions = [(position[0] + offset[0], position[1] + offset[1]) for position in positions]
-
-            image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
-
-            image_index = 0
-            while image_index < len(image_files):
-                for grid_index, grid in enumerate(grids):
-                    
-                    grid_columns, grid_rows = grid
-
-                    cell_width = MTG_CARD_WIDTH_IN_POINTS
-                    cell_height = MTG_CARD_HEIGHT_IN_POINTS
-
-                    if angle[grid_index]:
-                        cell_width, cell_height = cell_height, cell_width
-
-
-                    x_offset = positions[grid_index][0]
-                    y_offset = -positions[grid_index][1] + self.page_height - cell_height
-
-
-                    for row in range(grid_rows):
-                        for col in range(grid_columns):
-                            if image_index >= len(image_files):
-                                continue
-
-                            image_path = os.path.join(image_folder, image_files[image_index])
-                            image = self.process_image(image_path, angle[grid_index])[0]
-
-                            x = x_offset + col * (cell_width + self.padding)
-                            y = y_offset - row * (cell_height + self.padding)
-                            
-                            self.canvas.drawImage(image, x, y, width=cell_width, height=cell_height)
-
-                            image_index += 1
-
-                self.canvas.showPage()  # Start a new page after filling the grid
-
-            self.canvas.save()
-
-    def process_image(self, image_path, angle=0,):
-        with Image.open(image_path) as img:
-            if angle:
-                img = img.rotate(angle, expand=True)
-            img.save(image_path)  # Overwrites the image or use a temp file if needed
-            return image_path, img
 
 
 # TODO: Allow for other sites to be used
