@@ -314,7 +314,7 @@ class PDFGenerator:
         self.margin = margin
         self.canvas = canvas.Canvas(output_file, pagesize=page_size)
     
-    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(4, 8)):
+    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(4, 8), outline_color=(0.1, 0.1, 0.1), outline_width=1):
             """
             Arranges images into a specified grid size and saves them in the PDF.
             """
@@ -351,6 +351,13 @@ class PDFGenerator:
                             y = y_offset - row * (cell_height + self.padding)
                             
                             self.canvas.drawImage(image, x, y, width=cell_width, height=cell_height)
+
+                            # Draw a border around the image for cutting
+                            # Set the line width and color
+                            self.canvas.setLineWidth(outline_width)
+                            self.canvas.setStrokeColorRGB(*outline_color)
+
+                            self.canvas.rect(x, y, cell_width, cell_height, fill=0)
 
                             image_index += 1
 
@@ -404,22 +411,23 @@ def get_cards_from_any_link(url):
             write_to_file("\n".join(decklist), new_deck_image_folder.split('deck_list')[0] + f"{deck_title}_DECKLIST.txt")
 
         # Generate a PDF with the card images
-        pdf_path_3x3 = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_9_{deck_title}.pdf"
+        # pdf_path_3x3 = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_9_{deck_title}.pdf"
+
+        # print(f"\nGenerating PDF...")
+        # pdf_generator = PDFGenerator(pdf_path_3x3, margin=1, padding=0)
+        # pdf_generator.add_images_to_pdf(new_deck_image_folder,
+        #  grids=((3, 3),),
+        #  positions=
+        #     ((0, 0),
+        #     ),
+        #  angle=
+        #  (0,),)
+        # print(f"\nPDF generated: {pdf_path_3x3}")
+
+        # os.startfile(pdf_path_3x3)
+
+
         pdf_path_10 = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_10_{deck_title}.pdf"
-
-        print(f"\nGenerating PDF...")
-        pdf_generator = PDFGenerator(pdf_path2, margin=1, padding=0)
-        pdf_generator.add_images_to_pdf(new_deck_image_folder,
-         grids=((3, 3),),
-         positions=
-            ((0, 0),
-            ),
-         angle=
-         (0,),)
-        print(f"\nPDF generated: {pdf_path_3x3}")
-
-        os.startfile(pdf_path_3x3)
-
 
         print(f"\nGenerating PDF...")
         pdf_generator1 = PDFGenerator(pdf_path_10, margin=0, padding=0)
@@ -433,7 +441,6 @@ def get_cards_from_any_link(url):
          angle=(90,0,0,))
         print(f"\nPDF generated: {pdf_path_10}\n\n")
 
-        # Open the PDF file
         os.startfile(pdf_path_10)
 
 
