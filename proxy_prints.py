@@ -430,7 +430,7 @@ def get_cards_from_any_link(url):
         pdf_path_10 = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_10_{deck_title}.pdf"
 
         print(f"\nGenerating PDF...")
-        pdf_generator1 = PDFGenerator(pdf_path_10, margin=0, padding=0)
+        pdf_generator1 = PDFGenerator(pdf_path_10, margin=0, padding=0, outline_color=(0.1, 0.1, 0.1), outline_width=1)
         pdf_generator1.add_images_to_pdf(new_deck_image_folder,
          grids=((1, 3),(2,2),(3,1)), 
          positions=
