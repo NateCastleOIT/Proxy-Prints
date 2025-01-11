@@ -297,7 +297,7 @@ def write_to_file(content, output_file):
             print(f"An error occurred: {e}")
 
 class PDFGenerator:
-    def __init__(self, output_file, page_size=letter, padding=10, margin=20):
+    def __init__(self, output_file, page_size=letter, padding=0, margin=20):
         """
         Initializes the PDF generator with specified parameters.
 
@@ -314,7 +314,7 @@ class PDFGenerator:
         self.margin = margin
         self.canvas = canvas.Canvas(output_file, pagesize=page_size)
     
-    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(8, 12)):
+    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(4, 8)):
             """
             Arranges images into a specified grid size and saves them in the PDF.
             """
@@ -408,7 +408,7 @@ def get_cards_from_any_link(url):
         pdf_path_10 = f"{new_deck_image_folder.split('deck_list')[0]}PRINTABLE_10_{deck_title}.pdf"
 
         print(f"\nGenerating PDF...")
-        pdf_generator = PDFGenerator(pdf_path2, margin=1, padding=2)
+        pdf_generator = PDFGenerator(pdf_path2, margin=1, padding=0)
         pdf_generator.add_images_to_pdf(new_deck_image_folder,
          grids=((3, 3),),
          positions=
