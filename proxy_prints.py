@@ -314,7 +314,7 @@ class PDFGenerator:
         self.margin = margin
         self.canvas = canvas.Canvas(output_file, pagesize=page_size)
     
-    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(24, 12)):
+    def add_images_to_pdf(self, image_folder, grids=((3, 3),), positions=((0, 0),), angle=(0,), offset=(8, 12)):
             """
             Arranges images into a specified grid size and saves them in the PDF.
             """
@@ -422,13 +422,13 @@ def get_cards_from_any_link(url):
 
 
         print(f"\nGenerating PDF...")
-        pdf_generator1 = PDFGenerator(pdf_path_10, margin=0, padding=2)
+        pdf_generator1 = PDFGenerator(pdf_path_10, margin=0, padding=0)
         pdf_generator1.add_images_to_pdf(new_deck_image_folder,
          grids=((1, 3),(2,2),(3,1)), 
          positions=
          ((0, 0),
-         (MTG_CARD_HEIGHT_IN_POINTS + 2, 0),
-         (MTG_CARD_HEIGHT_IN_POINTS - MTG_CARD_WIDTH_IN_POINTS, 3*MTG_CARD_WIDTH_IN_POINTS + 6),
+         (MTG_CARD_HEIGHT_IN_POINTS, 0),
+         (0, 3*MTG_CARD_WIDTH_IN_POINTS),
          ),
          angle=(90,0,0,))
         print(f"\nPDF generated: {pdf_path_10}\n\n")
