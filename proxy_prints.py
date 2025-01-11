@@ -415,7 +415,7 @@ def get_cards_from_any_link(url):
         # os.startfile(pdf_path)
 
         print(f"\nGenerating PDF...")
-        pdf_generator = PDFGenerator(pdf_path2, margin=0, padding=2)
+        pdf_generator = PDFGenerator(pdf_path2, margin=1, padding=2)
         pdf_generator.add_images_to_pdf(new_deck_image_folder,
          grids=((1, 3),(2,2),(3,1)), 
          positions=
